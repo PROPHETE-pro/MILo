@@ -14,18 +14,45 @@ include_directories(${CONDA_PREFIX}/include)
 # TODO: fix this
 find_package(Torch REQUIRED)
 find_package(CGAL REQUIRED)
-# find_package(pybind11 REQUIRED)
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+find_package(Python3 COMPONENTS Development.Module QUIET)
+if(NOT COMMAND python3_add_library)
+    find_package(Python3 COMPONENTS Development REQUIRED)
+endif()
+# pybind11 in "new mode" expects python3_add_library from FindPython3.
+if(COMMAND python3_add_library)
+    set(PYBIND11_FINDPYTHON ON)
+else()
+    set(PYBIND11_FINDPYTHON COMPAT)
+endif()
+find_package(pybind11 CONFIG QUIET)
 
-include(FetchContent)
-FetchContent_Declare(
-    pybind11
-    GIT_REPOSITORY https://github.com/pybind/pybind11
-    GIT_TAG        v2.9.2
-)
-FetchContent_GetProperties(pybind11)
-if(NOT pybind11_POPULATED)
-    FetchContent_Populate(pybind11)
-    add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
+if(NOT pybind11_FOUND AND Python3_Interpreter_FOUND)
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" -c "import pybind11; print(pybind11.get_cmake_dir())"
+        OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        RESULT_VARIABLE PYBIND11_PYTHON_QUERY_STATUS
+        ERROR_QUIET
+    )
+    if(PYBIND11_PYTHON_QUERY_STATUS EQUAL 0 AND EXISTS "${PYBIND11_CMAKE_DIR}/pybind11Config.cmake")
+        message(STATUS "Using pybind11 from Python package: ${PYBIND11_CMAKE_DIR}")
+        set(pybind11_DIR "${PYBIND11_CMAKE_DIR}" CACHE PATH "Path to pybind11Config.cmake")
+        find_package(pybind11 CONFIG REQUIRED)
+    endif()
+endif()
+
+if(NOT pybind11_FOUND)
+    set(PYBIND11_GIT_REPOSITORY "https://github.com/pybind/pybind11.git" CACHE STRING "Git repository used to fetch pybind11")
+    set(PYBIND11_GIT_TAG "v2.9.2" CACHE STRING "Git tag used to fetch pybind11")
+    message(STATUS "pybind11 was not found locally. Fetching from ${PYBIND11_GIT_REPOSITORY}")
+    FetchContent_Declare(
+        pybind11
+        GIT_REPOSITORY ${PYBIND11_GIT_REPOSITORY}
+        GIT_TAG        ${PYBIND11_GIT_TAG}
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(pybind11)
 endif()
 
 

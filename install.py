@@ -45,6 +45,7 @@ if __name__ == '__main__':
     os.system(f"conda install -y cmake")
     os.system(f"conda install -y conda-forge::gmp")
     os.system(f"conda install -y conda-forge::cgal")
+    os.system(f"conda install -y conda-forge::pybind11")
     # WARNING: CUDA paths must be set before running cmake
     os.system(f"cmake .")
     os.system(f"make")
