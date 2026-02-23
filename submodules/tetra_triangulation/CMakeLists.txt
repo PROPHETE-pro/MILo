@@ -14,7 +14,17 @@ include_directories(${CONDA_PREFIX}/include)
 # TODO: fix this
 find_package(Torch REQUIRED)
 find_package(CGAL REQUIRED)
-find_package(Python3 COMPONENTS Interpreter QUIET)
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+find_package(Python3 COMPONENTS Development.Module QUIET)
+if(NOT COMMAND python3_add_library)
+    find_package(Python3 COMPONENTS Development REQUIRED)
+endif()
+# pybind11 in "new mode" expects python3_add_library from FindPython3.
+if(COMMAND python3_add_library)
+    set(PYBIND11_FINDPYTHON ON)
+else()
+    set(PYBIND11_FINDPYTHON COMPAT)
+endif()
 find_package(pybind11 CONFIG QUIET)
 
 if(NOT pybind11_FOUND AND Python3_Interpreter_FOUND)
